@@ -1,5 +1,4 @@
 \documentclass{article}
-\documentclass{article}
 \usepackage{graphicx} % Required for inserting images
 \usepackage[rightcaption]{sidecap}
 \usepackage[style=alphabetic]{biblatex}
@@ -50,11 +49,12 @@ The system has to be reliable.
 \end{enumerate}
 
 \subsection{System Architecture}
-\begin{figure}[h]
-\includegraphics[width=\textwidth]{frog.jpg}
-\caption{Design of my architecture}
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{1st_system_design_sketch.png}
+    \caption{Redesigned flight booking system (FBS)}
+    \label{fig:enter-label}
 \end{figure}
-
 \newpage 
 
 \subsection{Discussion}
@@ -71,12 +71,10 @@ My analysis of the given flight-booking-system was, that it has a high write-to-
 To scale the micro-services it is always possible to horizontally scale the micro-services by adding more instances. If the request arrives at the service it will be load-balanced internally and send to one of its instances.
 
 
-
-
 \section{Freestyle Exercise}
 \subsection{My DS-Concept}
-
+I chose to implement...
 \subsection{Evaluation}
-
+The evaluation is based on...
 \printbibliography[heading=bibintoc]
 \end{document}
