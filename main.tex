@@ -1,4 +1,5 @@
 \documentclass{article}
+\documentclass{article}
 \usepackage{graphicx} % Required for inserting images
 \usepackage[rightcaption]{sidecap}
 \usepackage[style=alphabetic]{biblatex}
@@ -49,23 +50,28 @@ The system has to be reliable.
 \end{enumerate}
 
 \subsection{System Architecture}
--> micro-services(APIs?)
--> load-balancer
--> distributed databases
--> caching to improve read performance for frequent searches
--> back up?
 \begin{figure}[h]
 \includegraphics[width=\textwidth]{frog.jpg}
 \caption{Design of my architecture}
 \end{figure}
 
-
-
-
-
+\newpage 
 
 \subsection{Discussion}
-TODO
+The functional requirements are mainly implemented as micro-services.
+The Flight-Search service queries the database according to the users flight-data. The booking service is used to book a flight that 
+
+The Seat-Select service is called if a customer wants to make a seat reservation on a selected plane. 
+The proxy handles...security before forwarding to service, also record performance metrics as entry-point???
+
+In order to address the non-functional requirements and insure scalability and performance different measures were taken. 
+The Load-Balancer distributes the incoming traffic equally to the proxy-servers so that the performance of the system isn't impacted by a single overloaded server (that would take way to long to respond to the user-requests). This also enables another point of scalability such that we can increase the number of proxy servers if the overall workload is to high.
+My analysis of the given flight-booking-system was, that it has a high write-to-read ratio (meaning the number of writes is way higher than the number of reads). Therefore we have database dublicates that all follow a single leader. With the additional caching it is insured, that the database-reads don't bottleneck the application. In the future additional replica can be added to support the database layer. We could also add additional partitioning (by origin-destination). 
+
+To scale the micro-services it is always possible to horizontally scale the micro-services by adding more instances. If the request arrives at the service it will be load-balanced internally and send to one of its instances.
+
+
+
 
 \section{Freestyle Exercise}
 \subsection{My DS-Concept}
