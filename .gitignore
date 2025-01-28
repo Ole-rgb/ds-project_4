@@ -1,12 +1,8 @@
 # Ignore all .class files
-*.class
+ds-project/bin/
 
 # Ignore metadata from eclipse
 .metadata/
 
-# Ignore bin directory
-bin/
-ds-project/bin/
 
-# Ignore .project file
 ds-project/.project
