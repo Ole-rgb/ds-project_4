@@ -6,4 +6,7 @@
 
 # Ignore bin directory
 bin/
-ds-project/bin/*
+ds-project/bin/
+
+# Ignore .project file
+ds-project/.project
