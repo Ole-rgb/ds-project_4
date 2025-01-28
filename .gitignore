@@ -10,3 +10,5 @@ ds-project/bin/
 
 # Ignore .project file
 ds-project/.project
+
+*.DS_Store
