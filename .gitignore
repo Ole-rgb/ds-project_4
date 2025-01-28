@@ -3,3 +3,6 @@
 
 # Ignore metadata from eclipse
 .metadata/
+
+# Ignore bin directory
+bin/
