@@ -9,6 +9,10 @@ COPY bin /app
 
 # Expose the port the server listens on
 EXPOSE 8080
+EXPOSE 8081/udp
+
+# Installiere curl (optional für Tests)
+RUN apt-get update && apt-get install -y ncat
 
 # Run the server program
 CMD ["java", "de.luh.vss.chat.loadbalancer.LoadBalancer"]

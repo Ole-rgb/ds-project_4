@@ -2,7 +2,10 @@ package de.luh.vss.chat.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 import de.luh.vss.chat.common.User.UserId;
@@ -56,7 +59,7 @@ public abstract class Message {
 		public String toString() {
 			return "REGISTER_REQUEST (" + id + ", " + address.getCanonicalHostName() + ":" + port + ")";
 		}
-
+		
 	}
 
 	public static class RegisterResponse extends Message {
@@ -141,12 +144,36 @@ public abstract class Message {
 			out.writeInt(recipient.id());
 			out.writeUTF(msg);
 		}
+		
+		public byte[] serializeMessage() throws IOException {
+		    // Create a ByteArrayOutputStream to hold the serialized data
+		    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		    DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
+		    
+		    // Write the message content to the DataOutputStream (yoinked from toStream)
+		    dataOutputStream.writeInt(MessageType.CHAT_MESSAGE.msgType());  // Write the message type
+		    dataOutputStream.writeInt(recipient.id());  // Write the recipient ID
+		    dataOutputStream.writeUTF(msg);  // Write the message itself
+		    
+		    // Return the byte array representation of the message
+		    return byteArrayOutputStream.toByteArray();
+		}
+		
+		// Used to sent a Chat-Message via UDP 
+		public void sendUdpChatMessage(DatagramSocket socket, Message.ChatMessage chatMessage, InetAddress targetAddress, int targetPort) throws IOException {
+			// Create a UDP packet
+		    byte[] buffer = chatMessage.serializeMessage();
+		    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, targetAddress, targetPort);
 
+		    // Send the packet using the existing UDP socket
+		    socket.send(packet);
+		}
+		
 		@Override
 		public MessageType getMessageType() {
 			return MessageType.CHAT_MESSAGE;
 		}
-
+		
 		public UserId getRecipient() {
 			return recipient;
 		}
@@ -159,6 +186,27 @@ public abstract class Message {
 		public String toString() {
 			return "CHAT_MESSAGE (to " + recipient + ": '" + msg + "')";
 		}
+		
+
+		@Override 
+		public boolean equals(Object obj) {
+			if(this == obj) return true; //reference equality
+			if(obj == null) return false; //null check
+			if(obj instanceof String) return matches((String)obj);//allow string comparison
+			if(getClass() != obj.getClass()) return false;//class equality 
+			ChatMessage chatMsg = (ChatMessage)obj;
+			if(this.getMessageType() != chatMsg.getMessageType()) return false; //check message-type
+
+			if(!this.getRecipient().equals(chatMsg.getRecipient())) return false; //check recipient
+			if(!this.getMessage().equals(chatMsg.getMessage())) return false; //check same msg-content
+				
+			return true;
+		}
+		
+		public boolean matches(String other) {
+		    return this.getMessage() != null && this.getMessage().equals(other);
+		}
+
 	}
 
 	public static Message parse(final DataInputStream in) throws IOException, ReflectiveOperationException {

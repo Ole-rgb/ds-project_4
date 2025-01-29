@@ -3,19 +3,24 @@ package de.luh.vss.chat.loadbalancer;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
 public class LoadBalancer {
-    private static final String DEFAULT_HOST = "localhost";
-    private final List<Server> servers; // Liste der Backend-Server
+    private final List<Server> servers = new CopyOnWriteArrayList<>(); // Thread-safe list of servers
     private int currentServerIndex = 0; // Index für Round-Robin
     private static final Logger logger = Logger.getLogger(LoadBalancer.class.getName());
+    private static final int HEARTBEAT_PORT = 8081;
+    private static final int HEARTBEAT_TIMEOUT = 5500; // 5,5 > 2*2,5 (e.g. two heartbeats)
+    private final Map<Server, ScheduledFuture<?>> removalTasks = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-
-    public LoadBalancer(List<Server> servers) {
-        this.servers = servers;
-    }
 
     // Methode, um den nächsten Server auszuwählen (Round-Robin)
     private synchronized Server getNextServer() {
@@ -29,17 +34,26 @@ public class LoadBalancer {
             if (logger.isLoggable(Level.INFO)) {
                 logger.info("Load Balancer gestartet auf Port "+ loadBalancerPort);
             }
-
+            //start the heartbeat listening
+            new Thread(this::listenForHeartbeats).start();
+            
             while (true) {
                 // Akzeptiere eingehende Verbindung vom Client
                 Socket clientSocket = serverSocket.accept();
                 if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Anfrage von client " +  clientSocket.getInetAddress().getHostAddress());
+                    logger.info("Anfrage von Client " +  clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
                 }
 
                 // Wähle den nächsten Server
+                if(servers.isEmpty()) {
+                	//TODO buffer the request until server is available
+                    if (logger.isLoggable(Level.INFO)) {
+                        logger.severe("Kein Server registriert, Anfrage gespeichert");
+                        
+                    }               
+                    continue;
+                }
                 Server backendServer = getNextServer();
-
                 // Starte einen neuen Thread für die Anfrage
                 new Thread(() -> handleRequest(clientSocket, backendServer)).start();
             }
@@ -72,8 +86,7 @@ public class LoadBalancer {
 
                 // Warte, bis die Übertragung vom Client abgeschlossen ist
                 clientToServer.join();
-                return;
-
+                break;
             } catch (Exception e) {
                 retryCount--;
                 if (retryCount == 0) {
@@ -104,16 +117,53 @@ public class LoadBalancer {
         }
     }
 
+    private void listenForHeartbeats() {
+        try (DatagramSocket socket = new DatagramSocket(HEARTBEAT_PORT)) {
+            byte[] buffer = new byte[256];
+            while (true) {
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                socket.receive(packet);
+            	Server server = retrieveServerData(packet);
+                if (!servers.contains(server)) {
+                    servers.add(server);
+                    if (logger.isLoggable(Level.INFO)) {
+                        logger.info("Server hinzugefügt: " + servers);
+                    }
+                }
+                
+                // Cancel any existing scheduled removal task for this server
+                ScheduledFuture<?> existingTask = removalTasks.remove(server);
+                if (existingTask != null) {
+                    existingTask.cancel(false);
+                }            
+                // Schedule a new removal task
+                ScheduledFuture<?> removalTask = scheduler.schedule(() -> {
+                    servers.remove(server);
+                    removalTasks.remove(server);
+                    logger.info("Server entfernt: " + server);
+                }, HEARTBEAT_TIMEOUT, TimeUnit.MILLISECONDS);
+
+                removalTasks.put(server, removalTask);
+
+                
+            }
+        } catch (IOException e) {
+            logger.severe("Fehler beim Empfangen von Heartbeats: " + e.getMessage());
+        }
+    }
+    
+    private Server retrieveServerData(DatagramPacket packet) {
+        String serverInfo = new String(packet.getData(), 0, packet.getLength());
+        String[] parts = serverInfo.split(":");
+        
+        String host = parts[0];
+        int port = Integer.parseInt(parts[1]);
+    	return new Server(host, port);
+    }
+    
     public static void main(String[] args) {
-        List<Server> servers = Arrays.asList(
-
-            new Server(System.getenv().getOrDefault("SERVER1_HOST", DEFAULT_HOST), 4444),
-            new Server(System.getenv().getOrDefault("SERVER2_HOST", DEFAULT_HOST), 4445),
-            new Server(System.getenv().getOrDefault("SERVER3_HOST", DEFAULT_HOST), 4446)
-        );
-
         // Starte den Load Balancer
-        new LoadBalancer(servers).start(8080);
+        new LoadBalancer().start(8080);
     }
 }
 
