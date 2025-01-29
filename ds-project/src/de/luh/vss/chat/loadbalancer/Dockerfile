@@ -8,7 +8,7 @@ WORKDIR /app
 COPY bin /app
 
 # Expose the port the server listens on
-EXPOSE 4444
+EXPOSE 8080
 
-# Run the server program with the port argument
-CMD ["java", "de.luh.vss.chat.server.ServerNode", "4444"]
+# Run the server program
+CMD ["java", "de.luh.vss.chat.loadbalancer.LoadBalancer"]

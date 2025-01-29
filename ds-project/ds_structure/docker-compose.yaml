@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Loadbalancer als Einstiegspunkt für Clients
+  loadbalancer:
+    image: loadbalancer
+    build:
+      context: ../
+      dockerfile: src/de/luh/vss/chat/loadbalancer/Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - net1
+    environment:
+      - SERVER1_HOST=servernode1
+      - SERVER2_HOST=servernode2
+      - SERVER3_HOST=servernode3
+
+  # Servernode 1 & 2 im gleichen Netzwerk
+  servernode1:
+    image: server-node
+    build:
+      context: ../
+      dockerfile: src/de/luh/vss/chat/server/Dockerfile
+    ports:
+      - "4444:4444"
+    networks:
+      - net1
+    command: ["java", "de.luh.vss.chat.server.ServerNode", "4444"]
+
+  servernode2:
+    image: server-node
+    build:
+      context: ../
+      dockerfile: src/de/luh/vss/chat/server/Dockerfile
+    ports:
+      - "4445:4444"
+    networks:
+      - net1
+    command: ["java", "de.luh.vss.chat.server.ServerNode", "4445"]
+
+  # Servernode 3 im anderem Netzwerk
+  servernode3:
+    image: server-node
+    build:
+      context: ../
+      dockerfile: src/de/luh/vss/chat/server/Dockerfile
+    ports:
+      - "4446:4444"
+    networks:
+      - net1
+    command: ["java", "de.luh.vss.chat.server.ServerNode", "4446"]
+
+networks:
+  net1:
+    driver: bridge
+

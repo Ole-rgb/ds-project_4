@@ -1,46 +1,69 @@
 package de.luh.vss.chat.server;
 
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class ServerNode {
-	public static void main(String... args) {
-		java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ServerNode.class.getName());
+    private static final Logger logger = Logger.getLogger(ServerNode.class.getName());
+    private static final int PORT = 4444;
+    private static boolean running = true;
+    private int port;
 
-		logger.info("ServerNode starting");
-		int port = 4444;
-        try (DatagramSocket socket = new DatagramSocket(port)) {
-            if (logger.isLoggable(java.util.logging.Level.INFO)) {
-                logger.info(String.format("Server läuft auf Port: %d", port));
-			}
-            byte[] buffer = new byte[1024];
-            while (true) {
-				if(socket.isClosed()) {
-					logger.severe("Socket is closed");
-					break;
-				}
-				// Nachricht empfangen
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet);
-                String message = new String(packet.getData(), 0, packet.getLength());
-				// Nachricht ausgeben
-                if (logger.isLoggable(java.util.logging.Level.INFO)) {
-                    logger.info(String.format("Nachricht erhalten: %s", message));
-                }
-                // Antwort senden
-                String response = "ACK(" + port + "): " + message;
-                byte[] responseBytes = response.getBytes();
-                DatagramPacket responsePacket = new DatagramPacket(
-                    responseBytes, responseBytes.length, packet.getAddress(), packet.getPort()
-                );
-                socket.send(responsePacket);
+    public ServerNode(int port) {
+        this.port = port;
+    }
+    
+    public static void main(String... args) {
+        int port = args.length > 0 ? Integer.parseInt(args[0]) : PORT;
+        new ServerNode(port).start();
+    }
+
+    public void start() {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            if (logger.isLoggable(Level.INFO)) {
+                logger.info("Server läuft auf Port: " + port);
             }
-
-        } catch (java.net.SocketException e) {
-            logger.severe("SocketException: " + e.getMessage());
+            while(running){
+                if(!running){
+                    break;
+                }
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    Thread clientThread = new Thread(() -> handleClient(clientSocket));
+                    clientThread.start();
+                } catch (java.io.IOException e) {
+                    logger.severe("IOException: " + e.getMessage());
+                }
+            }
         } catch (java.io.IOException e) {
             logger.severe("IOException: " + e.getMessage());
         }
-	}
+    }
+
+    private static void handleClient(Socket clientSocket){
+        try(
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true);
+            ){
+            String message = in.readLine();
+            if (message != null) {
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.info("Nachricht erhalten: " + message);
+                }
+                String response = "ACK(" + PORT + "): " + message;
+                out.println(response);
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.info("Antwort gesendet: " + response);
+                }
+            }
+        } catch (Exception e) {
+            logger.severe("handleClient: " + e.getMessage());
+        }
+    }
 }
