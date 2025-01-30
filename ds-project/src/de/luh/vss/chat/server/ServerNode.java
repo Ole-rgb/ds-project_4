@@ -6,6 +6,10 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.logging.Logger;
 
 import java.util.logging.Level;
@@ -15,8 +19,7 @@ import java.util.TimerTask;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-
-import java.util.Random;
+import java.util.Arrays;
 
 public class ServerNode {
     private static final Logger logger = Logger.getLogger(ServerNode.class.getName());
@@ -28,6 +31,11 @@ public class ServerNode {
     private static boolean running = true;
     private static int currentPort;
     private static String nodeName;
+
+    // Database credentials from environment variables
+    private static final String DB_URL = System.getenv("DB_URL")==null ? "jdbc:postgresql://localhost:5432/mydb" : System.getenv("DB_URL");
+    private static final String DB_USER = System.getenv("DB_USER")==null ? "user" : System.getenv("DB_USER");
+    private static final String DB_PASSWORD = System.getenv("DB_PASSWORD")==null ? "password" : System.getenv("DB_PASSWORD");
 
     
     public static void main(String... args) {
@@ -91,8 +99,10 @@ public class ServerNode {
                 if (logger.isLoggable(Level.INFO)) {
                     logger.info("Nachricht erhalten: " + message);
                 }
+                
+                // Save data to database
+                saveToDatabase("7211", 1, true);
 
-                Thread.sleep(new Random().nextInt(3000)); // simulate processing time
                 String response = "ACK(" + currentPort + "): " + message;
                 out.println(response);
                 if (logger.isLoggable(Level.INFO)) {
@@ -103,4 +113,33 @@ public class ServerNode {
             logger.severe("handleClient: " + e.getMessage());
         }
     }
+
+    private static void saveToDatabase(String uid,int assignmentNr, boolean passed) {
+        String insertSQL = "INSERT INTO assignment_results (uid, assignment, passed) VALUES (?, ?, ?) " +
+                        "ON CONFLICT (uid, assignment) DO UPDATE SET passed = EXCLUDED.passed";
+        try{
+            // Ensure that the driver is loaded
+            Class.forName("org.postgresql.Driver");
+            System.out.println("PostgreSQL driver loaded.");
+        }catch(ClassNotFoundException e){
+            logger.severe("PostgreSQL driver not found: " + e.getMessage());
+        }
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            PreparedStatement stmt = conn.prepareStatement(insertSQL)) {
+
+            stmt.setInt(1, Integer.parseInt(uid));
+            stmt.setInt(2, assignmentNr);
+            stmt.setBoolean(3, passed); 
+
+            stmt.executeUpdate();
+            
+            if (logger.isLoggable(Level.INFO)) {
+                logger.info("Data saved to database: " + Arrays.toString(new Object[]{uid,assignmentNr,passed}));
+            }
+
+        } catch (SQLException | NumberFormatException e) {
+            logger.severe("Database Error: " + e.getMessage());
+        }
+    }   
 }
