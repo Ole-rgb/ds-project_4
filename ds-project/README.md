@@ -1,17 +1,27 @@
 # ds-project
 
 # What did I build
-Basically I build a distributed version of the ds-assignemnt server.
-I didn't implement the testcases(yet).
+Basically I build a distributed version of the ds-assignment server.
 My design is very simple. I have a loadbalancer(round-robin) that forwards the tcp requests to the servernodes.
 The server nodes run in two different networks, possibly representing different datacenters. In each network the servers can communicate with eachother but there is no comminucation between servers of different networks.
-The basic flow is USER-REQUEST(soon text-message)->LoadBalancer(round-robin to node1/2/3)->selected node
+The basic flow is USER-REQUEST(text-message)->LoadBalancer(round-robin to node1/2/3)->selected node
 (and then back)
 I also implemented a UDP-heartbeat mechanism that periodically checks if all server are still running.
+To visualize I build a small api that reads the database-tables.
+To test the database-reads and the effect on the api, I implemented a small testcase.
+## TESTCASE:
+If the chatmessage in the client 
+
+### To compose the entire infrastructure run 
+cd ds_structure
+docker compose up 
+
+## The api can be reached at localhost:8000, documentation you be found at localhost:8000/docs
 ### Potential goals:
-- Shared database for students grades? And other online user-ids?
-- Nodes communicate internally (why?)
-- ChatMessage/Message besed communication
+- Leader-Follower database
+- Nodes communicate internally(for "vertical"-loadsharing)
+- Implementation of online user-ids/ips
+- Caching 
 
 # Running the system
 ### Build the server-node image from workdirectory(ds-project)
@@ -28,9 +38,3 @@ docker run --name loadbalancer-container -p 8080:8080 loadbalancer
 docker build -t api -f api/Dockerfile .
 ### Run the api image (keep in mind that the ports can be modified to suit your needs)
 docker run --name api-container -p 8000:8000 api
-
-
-
-### To compose the entire infrastructure run 
-cd ds_structure
-docker compose up 
