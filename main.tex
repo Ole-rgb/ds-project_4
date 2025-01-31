@@ -20,10 +20,6 @@
 
 \subsection{Requirements}
 This section talks about the functional and non-functional requirements of the flight booking system wanted by the ACME Organization. 
-The main points given were about the given points considering (this will be a short overview about the task).
-
-Short Description what the differences between function and non-function requirements are and I chose them (from the given context and my personal thought).
-
 \subsubsection{Functional Requirements}
 \begin{enumerate}
 
@@ -59,15 +55,13 @@ The system has to be reliable.
 
 \subsection{Discussion}
 The functional requirements are mainly implemented as micro-services.
-The Flight-Search service queries the database according to the users flight-data. The booking service is used to book a flight that 
-
-The Seat-Select service is called if a customer wants to make a seat reservation on a selected plane. 
-The proxy handles...security before forwarding to service, also record performance metrics as entry-point???
+The Flight-Search service queries the database according to the users flight-data. The booking service is used to book a flight that meets the requirements and the Seat-Select service is called if a customer wants to make a seat reservation on a selected plane. 
+The proxy handles security, also adding further loadbalancing before forwarding to the requested service. 
 
 In order to address the non-functional requirements and insure scalability and performance different measures were taken. 
 The Load-Balancer distributes the incoming traffic equally to the proxy-servers so that the performance of the system isn't impacted by a single overloaded server (that would take way to long to respond to the user-requests). This also enables another point of scalability such that we can increase the number of proxy servers if the overall workload is to high.
-My analysis of the given flight-booking-system was, that it has a high write-to-read ratio (meaning the number of writes is way higher than the number of reads). Therefore we have database dublicates that all follow a single leader. With the additional caching it is insured, that the database-reads don't bottleneck the application. In the future additional replica can be added to support the database layer. We could also add additional partitioning (by origin-destination). 
-
+My analysis of the given flight-booking-system was, that it has a high write-to-read ratio (meaning the number of writes is way higher than the number of reads). Therefore we have database dublicates that all follow a single leader. 
+Those replicas are read-only and help to satisfy the high read-demand. Furthermore the additional caching insures, that the database-reads don't bottleneck the application. In the future additional replica can be added to support the database layer. We could also add additional partitioning (by origin-destination). 
 To scale the micro-services it is always possible to horizontally scale the micro-services by adding more instances. If the request arrives at the service it will be load-balanced internally and send to one of its instances.
 
 
@@ -113,57 +107,41 @@ The database instance is just a postgres-14:alpina container specified to allow 
 \newpage
 
 \subsection{Evaluation}
+\subsubsection{Pros}
+\begin{enumerate}
+\item \textbf{Functional Requirements:}
+The implementation matched all the functional requirements a ds-assignment server has. Even though I only implemented one simple test-case it can be seen as a POC that all the components interact in the intended way.
+The docker-logs also provide further evidence, that the loadbalancer relays the incoming requests in its intended way. The API interface also shows, that the test can be passed and the results are updated in the database. Therefore the functional requirements are definitely matched.
+\item \textbf{Fault-Tolerant Heartbeat Mechanism:}
+Fault-Tolerant Heartbeat Mechanism: The UDP heartbeat ensures that if a server is unreachable, it is quickly removed from the rotation, minimizing potential downtime.
+\item \textbf{Simplicity in Load Distribution}
+A simple design of components can be a good thing, especially when a more complex solution is not needed. The current design of the loadbalancer will be able to handle the current maximum number of requests with ease, therefore keeping the implementation straightforward is a plus.
+\end{enumerate}
+
 \subsubsection{Cons and Limitations}
 \begin{enumerate}
-
 \item \textbf{Suboptimal Load Balancing:}
 Although round-robin is simple, it does not account for the actual server utilization. More advanced techniques like dynamic load balancing could distribute requests more efficiently when workloads are uneven across different requests. Especially when more complex test-cases are implemented, the workload might differ a lot (simple string comparison vs multi-step message protocol).
-
 \item \textbf{Security Weaknesses:}
 Even though this is only a prototype, it has to be mentioned that I didn't consider security at all.
 The API currently lacks authentication (e.g., bearer tokens) and all ports are exposed through localhost. In a real environment the student should only have access to the loadbalancer and every following request, even to the server should include some sort of authentication.
-
-
-
-
-\textbf{View Flights:}
-The customer is able to see specific flight details. 
-Therefore the customer enters a specific flight number/ flight ID and gets updates about the specified flight.
-\item \textbf{Booking:}
-The customer is able to book a flight on a desired flight as well as make a seat reservation on the airplane (Most airlines offer different price-tiers for seats). 
+\item \textbf{Single Points of Failure:}
+Both the load balancer and the database represent single points of failure. If the load balancer fails, the entire system becomes inaccessible(currently the servers could be accessed directly, but that would defeat the purpose of the entire system).
+\item \textbf{Modularity:}
+Currently the database gets accessed from two different points, the API as well as directly from the server(in sql). Because we aim for a high degree of modularity, the split access-points are suboptimal. A future goal should be to remove the direct access of the database via the server, but go through a API-Layer that specifies all possible database interactions very clearly.
 \end{enumerate}
 
+\subsubsection{Improvements and Future Work}
+As mentioned in the previous paragraph, moving to a clearly seperated API-Layer that handles all database interactions is definitely a clear future improvement.
+Also moving towards a distributed leader-follower database that implements horizontal optimization via replication(followers) and a RAFT implementation to handle leader failure, would add a significant part to the systems scalability and resilience. 
 
 
-Round-robin loadbalancing is enough for our usecase, but can could be more optimal(utilization based).
+\subsubsection{Conclusion}
+The implemented system successfully demonstrates key distributed systems concepts through a custom load balancer, a simple API, and a single-leader database. While I am aware of the fact that 1000 clients can most likely be handled by a single server, this implementation aims to act as a prototype.
+Therefore the round-robin load balancing is more than sufficient for the expected user load, as well as an potential increase of comp.-sci. students.
+The loadbalancer could still benefit from utilization-based strategies. Additionally, enhancements in security, database distribution, and modularity are recommended to align the system more closely with nonfunctional requirements and to eliminate single points of failure. 
 
-Pros:
-read/write balance is good, way less writes than reads, therefore single leader is enough for handliung the writes.
-
-Reads is way higher, because (problem, currently i write even on fail). 
-HEARTBEAT:
-- If a server is shut down or physically seperated from the load-balancer for any reason, the implemented udp-heartbeat can't be received by the load-balancer. Therefore the server is removed from the list of servers, participating in the round-robin.
-servers
-
-
-
-->Discussion Points
--idea: meh, why its enought, ids go up to 1000, so there are almost definitely less than 1000 users. So the one provided server would most definitely be enough to handle the peak traffic. But as I understand it, the idea was to have some fun with distributed systems and to build on the given communication protocol and \textit{"designing a novel application"}\cite{ds_4} 
-
-
--functional-requirements -> reasy to meat > not to complex: send data/save results/
--nonfunctional-req -> problem
-big minus SECURITY:
--> API has no verificaction e.g. bearer token,e.g.
--> Single point of failure in loadbalancer and 
-
-REQUIREMENTS
--> longr testcases need to be stored in db???? no longer connections between server and client
-->ANALYSIS of requirements is probably wrong.
-
-Improvements:
--> Distributed database 
--> Modularity/Encapsiation: Have api layer between db and java servers
+Overall, the project fulfills its educational purpose of experimenting with distributed system design, while also highlighting areas for further improvement.
 
 \printbibliography[heading=bibintoc]
 \end{document}
