@@ -1,9 +1,7 @@
 package de.luh.vss.chat.server;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
@@ -11,6 +9,11 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.logging.Logger;
+
+import de.luh.vss.chat.common.Message;
+import de.luh.vss.chat.common.Message.ChatMessage;
+import de.luh.vss.chat.common.Message.ErrorResponse;
+import de.luh.vss.chat.common.MessageType;
 
 import java.util.logging.Level;
 import java.io.IOException;
@@ -59,9 +62,10 @@ public class ServerNode {
                     break;
                 }
                 try {
-                    Socket clientSocket = serverSocket.accept();
-                    Thread clientThread = new Thread(() -> handleClient(clientSocket));
-                    clientThread.start();
+                    Socket lbSocket = serverSocket.accept();
+                	DataInputStream in = new DataInputStream(lbSocket.getInputStream());
+                	DataOutputStream out = new DataOutputStream(lbSocket.getOutputStream());
+                    new Thread(() -> handleMessage(in, out)).start();
                 } catch (java.io.IOException e) {
                     logger.severe("IOException: " + e.getMessage());
                 }
@@ -89,55 +93,69 @@ public class ServerNode {
         }, 0, HEARTBEAT_INTERVAL);
     }
 
-    private static void handleClient(Socket clientSocket){
-        try(
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true);
-            ){
-            String message = in.readLine();
-            if (message != null) {
-                if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Nachricht erhalten: " + message);
-                }
-                
-                // Save data to database
-                saveToDatabase("7211", 1, true);
+    private static void handleMessage(DataInputStream in, DataOutputStream out){
+        try{
+            Message receivedMsg = Message.parse(in);
+            if (logger.isLoggable(Level.INFO)) {
+            	logger.info(receivedMsg.toString());
+            }
 
-                String response = "ACK(" + currentPort + "): " + message;
-                out.println(response);
-                if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Antwort gesendet: " + response);
+            if(receivedMsg.getMessageType() == MessageType.CHAT_MESSAGE) {
+         	    ChatMessage msg = (ChatMessage)receivedMsg;
+         	  
+                // compare [TEST 1 USER ID: 7211]                
+                if(msg.getMessage().startsWith("TEST 1 USER ID: ")) {
+                    //compare chat-message content  
+                    boolean passed = msg.getMessage().equals(String.format("TEST 1 USER ID: %s", msg.getRecipient().id())); 
+                    int uid = msg.getRecipient().id();
+                    
+                    if(passed) {
+                    	// Save data to database
+                    	saveToDatabase(String.valueOf(uid), 1, passed);
+                    	
+                    	// Send passed response
+                    	new ChatMessage(msg.getRecipient(), "TEST 1 USER ID CORRECTNESS PASSED").toStream(out); 
+                    	return;
+                    }
+                    // Send failed response
+                	new ChatMessage(msg.getRecipient(), "TEST 1 USER ID CORRECTNESS FAILED").toStream(out);
+                	saveToDatabase(String.valueOf(uid), 1, passed);
                 }
             }
+            else if(receivedMsg.getMessageType() == MessageType.ERROR_RESPONSE) {
+            	//todo
+            }
+            else if(receivedMsg.getMessageType() == MessageType.REGISTER_RESPONSE) {
+            	//todo
+            }
+            else if(receivedMsg.getMessageType() == MessageType.REGISTER_REQUEST) {
+            	//todo
+            }
         } catch (Exception e) {
-            logger.severe("handleClient: " + e.getMessage());
+            try {
+                logger.severe("handleClient: " + e.getMessage());
+                new ErrorResponse("Unknown message type").toStream(out);
+            } catch (IOException ignored) {
+            }
         }
     }
 
     private static void saveToDatabase(String uid,int assignmentNr, boolean passed) {
         String insertSQL = "INSERT INTO assignment_results (uid, assignment, passed) VALUES (?, ?, ?) " +
                         "ON CONFLICT (uid, assignment) DO UPDATE SET passed = EXCLUDED.passed";
-        try{
-            // Ensure that the driver is loaded
-            Class.forName("org.postgresql.Driver");
-            System.out.println("PostgreSQL driver loaded.");
-        }catch(ClassNotFoundException e){
-            logger.severe("PostgreSQL driver not found: " + e.getMessage());
-        }
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
             PreparedStatement stmt = conn.prepareStatement(insertSQL)) {
 
             stmt.setInt(1, Integer.parseInt(uid));
             stmt.setInt(2, assignmentNr);
-            stmt.setBoolean(3, passed); 
+            stmt.setBoolean(3, passed);
 
             stmt.executeUpdate();
             
             if (logger.isLoggable(Level.INFO)) {
                 logger.info("Data saved to database: " + Arrays.toString(new Object[]{uid,assignmentNr,passed}));
             }
-
         } catch (SQLException | NumberFormatException e) {
             logger.severe("Database Error: " + e.getMessage());
         }

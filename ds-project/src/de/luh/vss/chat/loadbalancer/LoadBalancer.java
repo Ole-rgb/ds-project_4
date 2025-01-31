@@ -67,12 +67,12 @@ public class LoadBalancer {
         int retryCount = 3;
         while (retryCount > 0) {
             try (
-                InputStream clientIn = clientSocket.getInputStream();
-                OutputStream clientOut = clientSocket.getOutputStream();
+                DataInputStream clientIn = new DataInputStream(clientSocket.getInputStream());
+                DataOutputStream clientOut = new DataOutputStream(clientSocket.getOutputStream());
 
                 Socket serverSocket = new Socket(backendServer.getKey(), backendServer.getValue());
-                InputStream serverIn = serverSocket.getInputStream();
-                OutputStream serverOut = serverSocket.getOutputStream()
+            	DataInputStream serverIn = new DataInputStream(serverSocket.getInputStream());
+            	DataOutputStream serverOut = new DataOutputStream(serverSocket.getOutputStream());
             ) {
                 if (logger.isLoggable(Level.INFO)) {
                     logger.info("Verbindung zu Backend-Server " + backendServer.getKey() + ":" + backendServer.getValue() + " hergestellt");
@@ -104,7 +104,7 @@ public class LoadBalancer {
     }
 
     // Überträgt Daten zwischen zwei Streams
-    private void transferData(InputStream in, OutputStream out) {
+    private void transferData(DataInputStream in, DataOutputStream out) {
         try {
             byte[] buffer = new byte[8192];
             int bytesRead;
