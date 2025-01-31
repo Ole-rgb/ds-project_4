@@ -75,7 +75,26 @@ To scale the micro-services it is always possible to horizontally scale the micr
 \subsection{My DS-Concept}
 I chose to implement a distributed version of our assignment server. 
 The core improvement is, that the workload is distributed amongst various stateless servers that can access a database to update a representative "assignment-01"-score. To scale the number of servers horizontally, I implemented a loadbalancer that uses round-robin scheduling to distributes the work amongst the registered servers. The idea is that the clients can only communicate with the servers via the loadbalancer, that forwards the workload, therefore increasing the maximum number of requests that can be processed in parallel. 
-To represent a distributed system on a local machine, I wrote a docker-com 
+To represent a distributed system on a local machine, I wrote a docker-compose file. This file includes multiple servers in different networks (net-1 and net-2; representing two data-centers) as well as references to the loadbalancer, the database storing the student data and an API. The api is used to read certain database information and ultimately display the students and the passed/failed exam-entries in a static neat frontend.
+
+.
+
+
+.
+
+
+.
+
+
+
+
+
+
+
+
+
+
+
 
 I chose to model two different networks (net-1 and net-2) representing different data-centers. 
 
