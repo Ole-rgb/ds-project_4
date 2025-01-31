@@ -113,6 +113,28 @@ The database instance is just a postgres-14:alpina container specified to allow 
 \newpage
 
 \subsection{Evaluation}
+\subsubsection{Cons and Limitations}
+\begin{enumerate}
+
+\item \textbf{Suboptimal Load Balancing:}
+Although round-robin is simple, it does not account for the actual server utilization. More advanced techniques like dynamic load balancing could distribute requests more efficiently when workloads are uneven across different requests. Especially when more complex test-cases are implemented, the workload might differ a lot (simple string comparison vs multi-step message protocol).
+
+\item \textbf{Security Weaknesses:}
+Even though this is only a prototype, it has to be mentioned that I didn't consider security at all.
+The API currently lacks authentication (e.g., bearer tokens) and all ports are exposed through localhost. In a real environment the student should only have access to the loadbalancer and every following request, even to the server should include some sort of authentication.
+
+
+
+
+\textbf{View Flights:}
+The customer is able to see specific flight details. 
+Therefore the customer enters a specific flight number/ flight ID and gets updates about the specified flight.
+\item \textbf{Booking:}
+The customer is able to book a flight on a desired flight as well as make a seat reservation on the airplane (Most airlines offer different price-tiers for seats). 
+\end{enumerate}
+
+
+
 Round-robin loadbalancing is enough for our usecase, but can could be more optimal(utilization based).
 
 Pros:
