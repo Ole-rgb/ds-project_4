@@ -111,3 +111,15 @@ def get_all_assignments():
             if assignments:
                 return assignments
             raise HTTPException(status_code=404, detail="No assignments found")
+
+
+@app.get("/online")
+def get_currently_online():
+    """Fetch all users who are currently online."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT uid, ip FROM users_online")
+            users = cursor.fetchall()
+            if users:
+                return users
+            raise HTTPException(status_code=404, detail="No users are online")

@@ -14,6 +14,13 @@ CREATE TABLE assignment_results (
     UNIQUE (uid, assignment)        -- Prevents duplicate test results per user for the same assignment
 );
 
+CREATE TABLE users_online (
+    id SERIAL PRIMARY KEY,        -- Unique identifier for test entries
+    uid INT NOT NULL,             -- Foreign key linking to users table
+    ip VARCHAR(50) NOT NULL,      -- IP address of the user
+    FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE
+);
+
 
 INSERT INTO users (uid, name) VALUES 
 ('4328', 'student.name1'),
