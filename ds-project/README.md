@@ -15,6 +15,7 @@ If the chatmessage in the client
 ### To compose the entire infrastructure run 
 cd ds_structure
 docker compose up 
+(The docker-files rely on the .class files from bin, so best compile it first in eclipse).
 
 ## The api can be reached at localhost:8000, documentation you be found at localhost:8000/docs
 ### Potential goals:
