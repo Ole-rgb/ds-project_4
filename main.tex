@@ -88,36 +88,29 @@ I also implemented  a heart-beat mechanism that sends a udp-package from the ser
 I supported the processing of MessageTypes specified in the given ds-repo. 
 The idea is, that the servers process given message-data and are able to write "assignment passed" or "assignment failed" into the database.
 As it's only a prototype, I implemented a very easy test to simulate the behaviour of the real test-server:
-If the received ChatMessage 
+If the received ChatMessage equals 'TEST 1 USER ID: ' + UID and the userId equals the userId specified in the ChatMessage the test gets passed. The server will return a message contaning "TEST 1 USER ID CORRECTNESS FAILED/PASSED", depending on the results of the message analysis. By the way, all other ChatMessages are just echoed.
+Therefore the database only needs a table to save the assignment-scores as well as a table for all the registered users, as well as a few constraints(e.g. only one entry per user per assignment, only valid userIds in the assignments table).
+The resulting postgresql database-schema looks accordingly[\ref{fig:database_assignment}].
+
+\begin{figure}[!hb]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/database_screenshot.png}
+    \caption{Enter Caption}
+    \label{fig:database_assignment}
+\end{figure}
 
 
+To create a better overview of the created docker-compose "system", I included a screenshot of the running application in docker-desktop. We can see 3 different servers, a loadbalancer, the database as well as the api containers. The different servernodes are all running the same server-image but use different ports of receive data that was forwarded by the loadbalancer.
+The database instance is just a postgres-14:alpina container specified to allow connections via the db-net. For further details consult the dockerfiles as well as the docker-compose file and the source-code.
 
--write about docker compose screenshot
--heartbeat
--database tables 
-
-
-
-that is able to detect nodes that fail and automatically replaces them.
-->read/write to database 
-->basic flight protocol, i can receive flight information and write to the database using ???
-
-
-
-
-\begin{figure}
+\begin{figure}[!hb]
     \centering
     \includegraphics[width=1\linewidth]{images/docker_compose_screenshot.png}
     \caption{Screenshot of components via docker-desktop}
     \label{fig:docker_compose}
 \end{figure}
 
-
-
-
-
-
-
+\newpage
 
 \subsection{Evaluation}
 Round-robin loadbalancing is enough for our usecase, but can could be more optimal(utilization based).
