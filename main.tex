@@ -73,16 +73,37 @@ To scale the micro-services it is always possible to horizontally scale the micr
 
 \section{Freestyle Exercise}
 \subsection{My DS-Concept}
-I chose to implement a Self-Healing-System that is able to detect nodes that fail and automatically replaces them.
+I chose to implement a distributed version of our assignment server. 
+The core improvement is, that the workload is distributed amongst various stateless servers that get the data from a loadbalancer. The loadbalancer used round-robin scheduling and distributes the servers workload.
+Clients can only communicate via the loadbalancer forwards the workload to the servers. I chose to model two different networks (net-1 and net-2) representing different data-centers. 
+
+that is able to detect nodes that fail and automatically replaces them.
 ->read/write to database 
 ->basic flight protocol, i can receive flight information and write to the database using ???
+
 \subsection{Evaluation}
-The evaluation is based on...
+Round-robin loadbalancing is enough for our usecase, but can could be more optimal(utilization based).
+
+Pros:
+read/write balance is good, way less writes than reads, therefore single leader is enough for handliung the writes.
+
+Reads is way higher, because (problem, currently i write even on fail). 
+HEARTBEAT:
+- If a server is shut down or physically seperated from the load-balancer for any reason, the implemented udp-heartbeat can't be received by the load-balancer. Therefore the server is removed from the list of servers, participating in the round-robin.
+servers
 
 
--Problems, what happens to failed nodes, can we restart them or something (do they just dangle on a server)?
 
--What happends if the leader/manager of the system fails:
--Implement distributed 
+->Discussion Points
+-Exposing API?
+
+big minus SECURITY:
+-> API has no verificaction e.g. bearer token,e.g.
+-> Single point of failure in loadbalancer and 
+
+Improvements:
+-> Distributed database 
+-> Modularity/Encapsiation: Have api layer between db and java servers
+
 \printbibliography[heading=bibintoc]
 \end{document}
