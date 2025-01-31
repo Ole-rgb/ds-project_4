@@ -15,7 +15,7 @@ x-servernode-common:
 
 
 services:
-  # Primary PostgreSQL service (Master)
+  # Primary PostgreSQL service
   postgres_primary:
     image: postgres:14-alpine
     restart: always

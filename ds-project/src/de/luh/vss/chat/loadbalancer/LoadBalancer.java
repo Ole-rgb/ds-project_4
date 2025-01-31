@@ -21,14 +21,22 @@ public class LoadBalancer {
     private final Map<Server, ScheduledFuture<?>> removalTasks = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-
-    // Methode, um den nächsten Server auszuwählen (Round-Robin)
+    /**
+     * Methode, um den nächsten Server auszuwählen (Round-Robin).
+     * 
+     * @return Der nächste Server in der Round-Robin-Reihenfolge.
+     */
     private synchronized Server getNextServer() {
         Server server = servers.get(currentServerIndex);
         currentServerIndex = (currentServerIndex + 1) % servers.size();
         return server;
     }
 
+    /**
+     * Startet den Load Balancer und hört auf eingehende Verbindungen.
+     * 
+     * @param loadBalancerPort Der Port, auf dem der Load Balancer läuft.
+     */
     public void start(int loadBalancerPort) {
         try (ServerSocket serverSocket = new ServerSocket(loadBalancerPort)) {
             if (logger.isLoggable(Level.INFO)) {
@@ -62,7 +70,12 @@ public class LoadBalancer {
         }
     }
 
-    // Anfrage an Backend-Server weiterleiten
+    /**
+     * Leitet eine Anfrage an den Backend-Server weiter.
+     * 
+     * @param clientSocket  Die Socket-Verbindung zum Client.
+     * @param backendServer Der Backend-Server, an den die Anfrage weitergeleitet wird.
+     */
     private void handleRequest(Socket clientSocket, Server backendServer) {
         int retryCount = 3;
         while (retryCount > 0) {
@@ -103,7 +116,12 @@ public class LoadBalancer {
         }
     }
 
-    // Überträgt Daten zwischen zwei Streams
+    /**
+     * Überträgt Daten zwischen zwei Streams.
+     * 
+     * @param in  Der Eingabestream.
+     * @param out Der Ausgabestream.
+     */
     private void transferData(DataInputStream in, DataOutputStream out) {
         try {
             byte[] buffer = new byte[8192];
@@ -117,6 +135,9 @@ public class LoadBalancer {
         }
     }
 
+    /**
+     * Hört auf Heartbeats von den Servern.
+     */
     private void listenForHeartbeats() {
         try (DatagramSocket socket = new DatagramSocket(HEARTBEAT_PORT)) {
             byte[] buffer = new byte[256];
@@ -152,6 +173,12 @@ public class LoadBalancer {
         }
     }
     
+    /**
+     * Extrahiert Serverdaten aus einem DatagramPacket.
+     * 
+     * @param packet Das DatagramPacket, das die Serverdaten enthält.
+     * @return Ein Server-Objekt mit den extrahierten Daten.
+     */
     private Server retrieveServerData(DatagramPacket packet) {
         String serverInfo = new String(packet.getData(), 0, packet.getLength());
         String[] parts = serverInfo.split(":");
@@ -167,6 +194,9 @@ public class LoadBalancer {
     }
 }
 
+/**
+ * Klasse, die einen Server repräsentiert.
+ */
 class Server extends AbstractMap.SimpleEntry<String, Integer> {
     public Server(String key, Integer value) {
         super(key, value);

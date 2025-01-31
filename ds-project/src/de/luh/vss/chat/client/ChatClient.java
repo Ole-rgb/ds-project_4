@@ -31,6 +31,10 @@ public class ChatClient {
     private static final int UID = 7211;
     private static final String CHAT_MESSAGE = "TEST 1 USER ID: " + UID;
     
+    /**
+     * Main method to start the ChatClient.
+     * @param args Command line arguments
+     */
 	public static void main(String... args) {
 		try {
 			new ChatClient().start();
@@ -39,6 +43,11 @@ public class ChatClient {
 		}
 	}
 
+    /**
+     * Starts the ChatClient by establishing a connection to the server,
+     * registering the user, and starting the message listener thread.
+     * @throws IOException If an I/O error occurs
+     */
 	public void start() throws IOException {
         if (logger.isLoggable(Level.INFO)) {
             logger.info("Client gestartet");
@@ -56,9 +65,9 @@ public class ChatClient {
 		
 		// Start thread that listens for incoming messages 
 		new Thread(() -> displayMessages(in, out, user)).start();
+		
         // Send a chat message to the server that triggers exemplary test case behavior
-        System.out.println("SENDING RENEW1");
-        new ChatMessage(new UserId(7211), "RENEW1").toStream(out);
+        new ChatMessage(user.getUserId(), CHAT_MESSAGE).toStream(out);
         out.flush();
 
 		// Register with Server
@@ -73,6 +82,12 @@ public class ChatClient {
 	
 	}
 	
+    /**
+     * Listens for incoming messages from the server and handles them accordingly.
+     * @param in DataInputStream to read messages from the server
+     * @param out DataOutputStream to send messages to the server
+     * @param user The user object representing the client
+     */
 	private void displayMessages(DataInputStream in, DataOutputStream out, User user) {		
 		while(true) {
 			try {		
@@ -98,6 +113,12 @@ public class ChatClient {
 		}
 	}
 	
+    /**
+     * Periodically renews the lease by sending a register request to the server.
+     * @param keepRenewing Boolean flag to keep renewing the lease
+     * @param out DataOutputStream to send the register request
+     * @param registerRequest The register request message
+     */
 	private void renew_lease(Boolean keepRenewing, DataOutputStream out, Message.RegisterRequest registerRequest) {
         long startTime = System.currentTimeMillis();
     	while(keepRenewing) {       
@@ -114,11 +135,23 @@ public class ChatClient {
     	}
 	}
 
+    /**
+     * Handles error responses from the server.
+     * @param errorMsg The error response message
+     */
     private void handleErrorResponse(ErrorResponse errorMsg) {
 		logger.severe("PrintErrorResponseMessage: " + errorMsg.toString());
 		System.exit(0);
 	}
 
+    /**
+     * Handles chat messages from the server, checks their length, and optionally echoes them back.
+     * @param chatMsg The chat message received from the server
+     * @param out DataOutputStream to send messages to the server
+     * @param user The user object representing the client
+     * @param considerPattern Boolean flag to consider a specific pattern in the message
+     * @param pattern The pattern to check in the message
+     */
     private void handleChatMessage(ChatMessage chatMsg, DataOutputStream out, User user, Boolean considerPattern, String pattern) {
 		try {
 			int msgLength = chatMsgBytes(chatMsg);

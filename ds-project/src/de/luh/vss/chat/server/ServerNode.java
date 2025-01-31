@@ -39,7 +39,11 @@ public class ServerNode {
     private static final String DB_USER = System.getenv("DB_USER")==null ? "user" : System.getenv("DB_USER");
     private static final String DB_PASSWORD = System.getenv("DB_PASSWORD")==null ? "password" : System.getenv("DB_PASSWORD");
 
-    
+    /**
+     * Main method to start the server node.
+     * 
+     * @param args Command line arguments for port and node name.
+     */
     public static void main(String... args) {
         currentPort = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
         if (logger.isLoggable(Level.INFO)) {
@@ -50,6 +54,9 @@ public class ServerNode {
         new ServerNode().start();
     }
 
+    /**
+     * Starts the server node and listens for incoming connections.
+     */
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(currentPort)) {
             if (logger.isLoggable(Level.INFO)) {
@@ -74,6 +81,9 @@ public class ServerNode {
         }
     }
 
+    /**
+     * Starts the heartbeat mechanism to send periodic heartbeats to the load balancer.
+     */
     private void startHeartbeat() {
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -92,6 +102,12 @@ public class ServerNode {
         }, 0, HEARTBEAT_INTERVAL);
     }
 
+    /**
+     * Handles incoming messages from the load balancer.
+     * 
+     * @param in  DataInputStream to read messages from.
+     * @param out DataOutputStream to send responses to.
+     */
     private static void handleMessage(DataInputStream in, DataOutputStream out){
         try{
             Message receivedMsg = Message.parse(in);
@@ -116,6 +132,7 @@ public class ServerNode {
                     	// Send failed response
                     	new ChatMessage(msg.getRecipient(), "TEST 1 USER ID CORRECTNESS FAILED").toStream(out);
                     }
+                    return;
                 }
             	// Echo message that are not test messages
             	new ChatMessage(msg.getRecipient(), "ACK: " + msg.getMessage()).toStream(out); 
@@ -135,7 +152,7 @@ public class ServerNode {
                 if (logger.isLoggable(Level.INFO)) {
                     logger.info(String.format("received REGISTER_REQUEST: %s", regReq.toString()));
                 }
-            	//todo save to db, return list of online users and add timer that removes user from online list after 3 minutes(if no new lease request is received)
+            	//todo save to db, return list of online users and add timer that removes user from online list after 3 minutes(if no new lease request is received)    
             }
         } catch (Exception e) {
             try {
@@ -146,6 +163,13 @@ public class ServerNode {
         }
     }
 
+    /**
+     * Saves assignment results to the database.
+     * 
+     * @param uid          The user ID.
+     * @param assignmentNr The assignment number.
+     * @param passed       Whether the assignment was passed or not.
+     */
     private static void saveToDatabase(String uid,int assignmentNr, boolean passed) {
         String insertSQL = "INSERT INTO assignment_results (uid, assignment, passed) VALUES (?, ?, ?) " +
                         "ON CONFLICT (uid, assignment) DO UPDATE SET passed = EXCLUDED.passed";
