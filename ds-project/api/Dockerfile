@@ -10,6 +10,7 @@ COPY . /app
 # Copy only the api.py and the requirements.txt files into the container
 COPY api/api.py /app/api.py
 COPY api/requirements.txt /app/requirements.txt
+COPY api/static /app/static
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
