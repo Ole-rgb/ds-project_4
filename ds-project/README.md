@@ -24,6 +24,13 @@ docker build -t loadbalancer -f src/de/luh/vss/chat/loadbalancer/Dockerfile .
 ### Run the loadbalancer image (keep in mind that the ports can be modified to suit your needs)
 docker run --name loadbalancer-container -p 8080:8080 loadbalancer
 
+### Build the api images from workdirectory(ds-project)
+docker build -t api -f api/Dockerfile .
+### Run the api image (keep in mind that the ports can be modified to suit your needs)
+docker run --name api-container -p 8000:8000 api
+
+
+
 ### To compose the entire infrastructure run 
 cd ds_structure
 docker compose up 

@@ -71,6 +71,19 @@ services:
       - net2
       - db-net
     command: ["java", "-cp", ".:lib/postgresql-42.7.5.jar", "de.luh.vss.chat.server.ServerNode", "4446","servernode3"]
+  
+  # API Service
+  api:
+    image: api
+    build:
+      context: ../
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - db-net
+    depends_on:
+      - postgres_primary
 
 networks:
   net1:

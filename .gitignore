@@ -4,7 +4,10 @@ ds-project/bin/
 # Ignore metadata from eclipse
 .metadata/
 
+# Ignore pycache
+__pycache__/
 
 ds-project/.project
 
+# Ignore MacOS files
 *.DS_Store

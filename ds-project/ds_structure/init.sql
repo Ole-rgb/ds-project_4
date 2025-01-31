@@ -16,5 +16,18 @@ CREATE TABLE assignment_results (
 
 
 INSERT INTO users (uid, name) VALUES 
+('4328', 'student.name1'),
+('5231', 'student.name2'),
+('6220', 'student.name3'),
+('6430', 'student.name4'),
+('7014', 'student.name5'),
 ('7211', 'ole.roessler'),
 ('8888', 'test.user');
+
+INSERT INTO assignment_results (assignment, passed, uid) VALUES 
+('1', 'false', '4328'),
+('1', 'false', '5231'),
+('1', 'false', '6220'),
+('1', 'false', '6430'),
+('1', 'false', '7014'),
+('1', 'false', '7211');
