@@ -77,40 +77,47 @@ I chose to implement a distributed version of our assignment server.
 The core improvement is, that the workload is distributed amongst various stateless servers that can access a database to update a representative "assignment-01"-score. To scale the number of servers horizontally, I implemented a loadbalancer that uses round-robin scheduling to distributes the work amongst the registered servers. The idea is that the clients can only communicate with the servers via the loadbalancer, that forwards the workload, therefore increasing the maximum number of requests that can be processed in parallel. 
 To represent a distributed system on a local machine, I wrote a docker-compose file. This file includes multiple servers in different networks (net-1 and net-2; representing two data-centers) as well as references to the loadbalancer, the database storing the student data and an API. The API is used to read certain database information and ultimately display the students and the passed/failed exam-entries in a neat static front-end[\ref{fig:frontend}].
 
-
--write about the individual components 
--write about docker compose screenshot
--heartbeat
--database tables 
-
-\begin{figure}
+\begin{figure}[!hb]
     \centering
     \includegraphics[width=1\linewidth]{images/frontend_screenshot.png}
     \caption{Screenshot of the front-end}
     \label{fig:frontend}
 \end{figure}
 
-.
-
-
-.
-
-
-
-
+I also implemented  a heart-beat mechanism that sends a udp-package from the servers to the loadbalancer every few seconds to signal that they are still alive and able to receive new data. 
+I supported the processing of MessageTypes specified in the given ds-repo. 
+The idea is, that the servers process given message-data and are able to write "assignment passed" or "assignment failed" into the database.
+As it's only a prototype, I implemented a very easy test to simulate the behaviour of the real test-server:
+If the received ChatMessage 
 
 
 
+-write about docker compose screenshot
+-heartbeat
+-database tables 
 
 
-
-
-
-I chose to model two different networks (net-1 and net-2) representing different data-centers. 
 
 that is able to detect nodes that fail and automatically replaces them.
 ->read/write to database 
 ->basic flight protocol, i can receive flight information and write to the database using ???
+
+
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{images/docker_compose_screenshot.png}
+    \caption{Screenshot of components via docker-desktop}
+    \label{fig:docker_compose}
+\end{figure}
+
+
+
+
+
+
+
 
 \subsection{Evaluation}
 Round-robin loadbalancing is enough for our usecase, but can could be more optimal(utilization based).
@@ -126,11 +133,18 @@ servers
 
 
 ->Discussion Points
--Exposing API?
+-idea: meh, why its enought, ids go up to 1000, so there are almost definitely less than 1000 users. So the one provided server would most definitely be enough to handle the peak traffic. But as I understand it, the idea was to have some fun with distributed systems and to build on the given communication protocol and \textit{"designing a novel application"}\cite{ds_4} 
 
+
+-functional-requirements -> reasy to meat > not to complex: send data/save results/
+-nonfunctional-req -> problem
 big minus SECURITY:
 -> API has no verificaction e.g. bearer token,e.g.
 -> Single point of failure in loadbalancer and 
+
+REQUIREMENTS
+-> longr testcases need to be stored in db???? no longer connections between server and client
+->ANALYSIS of requirements is probably wrong.
 
 Improvements:
 -> Distributed database 
