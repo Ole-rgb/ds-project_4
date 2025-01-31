@@ -11,8 +11,7 @@ import java.sql.SQLException;
 import java.util.logging.Logger;
 
 import de.luh.vss.chat.common.Message;
-import de.luh.vss.chat.common.Message.ChatMessage;
-import de.luh.vss.chat.common.Message.ErrorResponse;
+import de.luh.vss.chat.common.Message.*;
 import de.luh.vss.chat.common.MessageType;
 
 import java.util.logging.Level;
@@ -97,39 +96,46 @@ public class ServerNode {
         try{
             Message receivedMsg = Message.parse(in);
             if (logger.isLoggable(Level.INFO)) {
-            	logger.info(receivedMsg.toString());
+            	logger.info("Received Message: " + receivedMsg.toString());
             }
 
             if(receivedMsg.getMessageType() == MessageType.CHAT_MESSAGE) {
          	    ChatMessage msg = (ChatMessage)receivedMsg;
-         	  
                 // compare [TEST 1 USER ID: 7211]                
                 if(msg.getMessage().startsWith("TEST 1 USER ID: ")) {
                     //compare chat-message content  
                     boolean passed = msg.getMessage().equals(String.format("TEST 1 USER ID: %s", msg.getRecipient().id())); 
                     int uid = msg.getRecipient().id();
-                    
+                	// Save data to database
+                	saveToDatabase(String.valueOf(uid), 1, passed);
+
                     if(passed) {
-                    	// Save data to database
-                    	saveToDatabase(String.valueOf(uid), 1, passed);
-                    	
                     	// Send passed response
                     	new ChatMessage(msg.getRecipient(), "TEST 1 USER ID CORRECTNESS PASSED").toStream(out); 
-                    	return;
+                    }else {
+                    	// Send failed response
+                    	new ChatMessage(msg.getRecipient(), "TEST 1 USER ID CORRECTNESS FAILED").toStream(out);
                     }
-                    // Send failed response
-                	new ChatMessage(msg.getRecipient(), "TEST 1 USER ID CORRECTNESS FAILED").toStream(out);
-                	saveToDatabase(String.valueOf(uid), 1, passed);
                 }
+            	// Echo message that are not test messages
+            	new ChatMessage(msg.getRecipient(), "ACK: " + msg.getMessage()).toStream(out); 
             }
             else if(receivedMsg.getMessageType() == MessageType.ERROR_RESPONSE) {
-            	//todo
+            	new ErrorResponse("Invalid Message Type : ERROR_RESPONSE").toStream(out);
             }
             else if(receivedMsg.getMessageType() == MessageType.REGISTER_RESPONSE) {
-            	//todo
+            	RegisterResponse regRes = (RegisterResponse)receivedMsg;
+                if (logger.isLoggable(Level.INFO)) {
+            	    logger.info("received REGISTER_RESPONSE: "+ regRes.toString());
+                }
+            	new ErrorResponse("Invalid Message Type : REGISTER_RESPONSE").toStream(out);
             }
             else if(receivedMsg.getMessageType() == MessageType.REGISTER_REQUEST) {
-            	//todo
+            	RegisterRequest regReq = (RegisterRequest)receivedMsg;
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.info(String.format("received REGISTER_REQUEST: %s", regReq.toString()));
+                }
+            	//todo save to db, return list of online users and add timer that removes user from online list after 3 minutes(if no new lease request is received)
             }
         } catch (Exception e) {
             try {
