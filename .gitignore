@@ -7,7 +7,6 @@ ds-project/bin/
 # Ignore pycache
 __pycache__/
 
-ds-project/.project
 
 # Ignore MacOS files
 *.DS_Store
